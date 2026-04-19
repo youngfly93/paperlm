@@ -21,6 +21,7 @@ _SUBMODULE_ALIASES = (
     "_plugin",
     "cli",
     "cli.batch",
+    "cli.tools",
     "engines",
     "engines.base",
     "engines.docling_adapter",

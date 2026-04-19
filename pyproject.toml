@@ -72,6 +72,7 @@ Source = "https://github.com/youngfly93/paperlm"
 
 [project.scripts]
 paperlm-batch = "markitdown_paperlm.cli.batch:main"
+paperlm-tools = "markitdown_paperlm.cli.tools:main"
 
 [project.entry-points."markitdown.plugin"]
 paperlm = "markitdown_paperlm"

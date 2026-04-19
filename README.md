@@ -3,8 +3,8 @@
 > **Scientific PDFs → Markdown, built for LLMs.**
 > A MarkItDown plugin that replaces the built-in PDF converter with Docling-powered layout analysis and PaddleOCR for scanned documents.
 
-**Status**: ✅ v0.1.0 released on PyPI — release checks, wheel build,
-TestPyPI smoke tests, and PyPI clean-install smoke tests pass.
+**Status**: ✅ v0.1.0 released on PyPI. `main` is preparing v0.1.1
+with operational tooling such as `paperlm-tools warmup`.
 
 中文版说明见 [README_zh.md](README_zh.md)。
 
@@ -203,6 +203,23 @@ JSONL input is supported for queues and ETL jobs:
 ```bash
 paperlm-batch --input-jsonl jobs.jsonl --output-jsonl results.jsonl --output-dir outputs/
 ```
+
+### Operational tools
+
+Use `paperlm-tools warmup` during deployment to pre-download and
+initialize optional engines before production traffic hits the first
+conversion. Warmup runs in guarded worker subprocesses, so timeout/RSS
+limits kill only the warmup worker instead of the parent process.
+
+```bash
+paperlm-tools warmup --engine docling
+paperlm-tools warmup --engine docling,ocr --timeout-s 600 --max-rss-mb-hard 6144
+```
+
+The command fails if the requested engine silently falls back to another
+engine. For example, `--engine docling` must finish with
+`engine_used=docling`; otherwise install `paperlm[docling]` or check the
+runtime environment.
 
 ## How it works
 
