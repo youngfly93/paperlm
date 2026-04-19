@@ -8,10 +8,11 @@ logic lives in serializers/markdown.py.
 from __future__ import annotations
 
 import io
-from typing import Any, BinaryIO, cast
+from typing import Any, BinaryIO
 
 from markitdown import DocumentConverter, DocumentConverterResult, StreamInfo
 
+from markitdown_paperlm.ir import IR
 from markitdown_paperlm.router import EngineRouter
 from markitdown_paperlm.serializers.json_sidecar import (
     ir_to_chunks_jsonl,
@@ -25,6 +26,41 @@ ACCEPTED_MIME_TYPE_PREFIXES = [
     "application/x-pdf",
 ]
 ACCEPTED_FILE_EXTENSIONS = [".pdf"]
+
+
+class PaperLMConverterResult(DocumentConverterResult):
+    """MarkItDown result with lazy PaperLM sidecars.
+
+    ``markdown`` is still generated during conversion because it is the stable
+    MarkItDown API. JSON sidecars are only materialized if a caller asks for
+    them, which keeps the normal "just give me Markdown" path lean.
+    """
+
+    def __init__(self, markdown: str, *, ir: IR, title: str | None = None) -> None:
+        super().__init__(markdown=markdown, title=title)
+        self.ir = ir
+        self.engine_used = ir.engine_used
+        self._paperlm_dict: dict[str, Any] | None = None
+        self._paperlm_json: str | None = None
+        self._paperlm_chunks_jsonl: str | None = None
+
+    @property
+    def paperlm_dict(self) -> dict[str, Any]:
+        if self._paperlm_dict is None:
+            self._paperlm_dict = ir_to_dict(self.ir)
+        return self._paperlm_dict
+
+    @property
+    def paperlm_json(self) -> str:
+        if self._paperlm_json is None:
+            self._paperlm_json = ir_to_json(self.ir)
+        return self._paperlm_json
+
+    @property
+    def paperlm_chunks_jsonl(self) -> str:
+        if self._paperlm_chunks_jsonl is None:
+            self._paperlm_chunks_jsonl = ir_to_chunks_jsonl(self.ir)
+        return self._paperlm_chunks_jsonl
 
 
 class PaperLMPdfConverter(DocumentConverter):
@@ -78,13 +114,4 @@ class PaperLMPdfConverter(DocumentConverter):
 
         ir = self._router.convert(file_stream)
         markdown = self._serializer.render(ir)
-
-        result = DocumentConverterResult(markdown=markdown)
-        # Non-stable API — see class docstring.
-        result_ext = cast(Any, result)
-        result_ext.ir = ir
-        result_ext.engine_used = ir.engine_used
-        result_ext.paperlm_dict = ir_to_dict(ir)
-        result_ext.paperlm_json = ir_to_json(ir)
-        result_ext.paperlm_chunks_jsonl = ir_to_chunks_jsonl(ir)
-        return result
+        return PaperLMConverterResult(markdown=markdown, ir=ir)

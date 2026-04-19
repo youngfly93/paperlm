@@ -5,8 +5,8 @@
 > **Scientific PDFs → Markdown, built for LLMs.**
 > A MarkItDown plugin that replaces the built-in PDF converter with Docling-powered layout analysis and PaddleOCR for scanned documents.
 
-**Status**: ✅ v0.1.1 released on PyPI with `paperlm-tools warmup`
-for deployment-time model initialization.
+**Status**: ✅ v0.1.1 released on PyPI. `main` is preparing v0.1.2
+with lazy sidecar generation and CI hardening.
 
 中文版说明见 [README_zh.md](README_zh.md)。
 

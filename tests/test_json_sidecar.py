@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import io
 import json
+from typing import Any
 
 from markitdown import StreamInfo
+from pytest import MonkeyPatch
 
+import markitdown_paperlm._pdf_converter as pdf_converter_mod
 from markitdown_paperlm._pdf_converter import PaperLMPdfConverter
 from markitdown_paperlm.ir import IR, BBox, Block, BlockType
 from markitdown_paperlm.serializers.json_sidecar import (
@@ -92,3 +95,50 @@ def test_pdf_converter_attaches_json_sidecars() -> None:
     assert result.paperlm_dict["block_count"] == 3
     assert json.loads(result.paperlm_json)["engine_used"] == "docling"
     assert "Paper Title" in result.paperlm_chunks_jsonl
+
+
+def test_pdf_converter_generates_sidecars_lazily(monkeypatch: MonkeyPatch) -> None:
+    class _Router:
+        def convert(self, _stream):
+            return _sample_ir()
+
+    calls = {"dict": 0, "json": 0, "chunks": 0}
+
+    def fake_ir_to_dict(ir: IR) -> dict[str, Any]:
+        calls["dict"] += 1
+        return {"block_count": len(ir.blocks)}
+
+    def fake_ir_to_json(ir: IR) -> str:
+        calls["json"] += 1
+        return json.dumps({"engine_used": ir.engine_used})
+
+    def fake_ir_to_chunks_jsonl(ir: IR) -> str:
+        calls["chunks"] += 1
+        return "\n".join(block.content for block in ir.blocks if block.content) + "\n"
+
+    monkeypatch.setattr(pdf_converter_mod, "ir_to_dict", fake_ir_to_dict)
+    monkeypatch.setattr(pdf_converter_mod, "ir_to_json", fake_ir_to_json)
+    monkeypatch.setattr(pdf_converter_mod, "ir_to_chunks_jsonl", fake_ir_to_chunks_jsonl)
+
+    converter = PaperLMPdfConverter()
+    converter._router = _Router()  # type: ignore[assignment]
+
+    result = converter.convert(
+        io.BytesIO(b"%PDF-1.4\n"),
+        StreamInfo(mimetype="application/pdf", extension=".pdf"),
+    )
+
+    assert result.markdown.startswith("# Paper Title")
+    assert calls == {"dict": 0, "json": 0, "chunks": 0}
+
+    assert result.paperlm_dict["block_count"] == 3
+    assert result.paperlm_dict["block_count"] == 3
+    assert calls["dict"] == 1
+
+    assert json.loads(result.paperlm_json)["engine_used"] == "docling"
+    assert json.loads(result.paperlm_json)["engine_used"] == "docling"
+    assert calls["json"] == 1
+
+    assert "Paper Title" in result.paperlm_chunks_jsonl
+    assert "Paper Title" in result.paperlm_chunks_jsonl
+    assert calls["chunks"] == 1
