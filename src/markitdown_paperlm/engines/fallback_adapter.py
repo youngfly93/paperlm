@@ -11,7 +11,8 @@ always have something to render.
 from __future__ import annotations
 
 import logging
-from typing import BinaryIO
+from io import IOBase
+from typing import BinaryIO, cast
 
 from markitdown_paperlm.ir import IR, Block, BlockType
 
@@ -43,7 +44,9 @@ class FallbackAdapter:
         try:
             pdf_stream.seek(0)
             try:
-                text = pdfminer.high_level.extract_text(pdf_stream) or ""
+                # pdfminer accepts file-like objects at runtime, but newer
+                # stubs require IOBase rather than the broader BinaryIO.
+                text = pdfminer.high_level.extract_text(cast(IOBase, pdf_stream)) or ""
             except Exception as exc:
                 logger.error("pdfminer.extract_text failed: %s", exc)
                 return IR(
