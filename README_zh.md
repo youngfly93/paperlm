@@ -1,10 +1,12 @@
 # paperlm
 
+[![CI](https://github.com/youngfly93/paperlm/actions/workflows/test.yml/badge.svg)](https://github.com/youngfly93/paperlm/actions/workflows/test.yml)
+
 > **面向 LLM 的科研 PDF → Markdown 转换插件。**
 > 用 Docling 做版面分析，用 PaddleOCR 处理扫描件，替换掉 MarkItDown 内置的 PDF 转换器。
 
-**状态**：✅ v0.1.0 已发布至 PyPI。`main` 正在准备 v0.1.1，
-新增 `paperlm-tools warmup` 等部署运维能力。
+**状态**：✅ v0.1.1 已发布至 PyPI，包含 `paperlm-tools warmup`
+部署预热命令。
 
 English version: [README.md](README.md)
 

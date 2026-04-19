@@ -1,28 +1,33 @@
-name: test
+name: CI
 
 on:
   push:
     branches: [main, master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      run_integration:
+        description: "Run heavy Docling + PaddleOCR integration tests"
+        required: false
+        default: false
+        type: boolean
 
 env:
   # Keep __pycache__/.pyc out of the source tree even during CI builds.
   PYTHONDONTWRITEBYTECODE: "1"
   PYTHONPYCACHEPREFIX: /tmp/paperlm-pycache
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  fast:
-    name: fast tests (py${{ matrix.python }})
+  quality:
+    name: quality gate (py3.12)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ["3.10", "3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -30,21 +35,21 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: "3.12"
 
-      - name: Install uv
-        run: pip install --upgrade pip uv
-
-      # Fast tests do not depend on Docling or PaddleOCR — only core deps.
-      - name: Install package with dev extras
+      - name: Install package with dev/build tooling
         run: |
-          uv pip install --system -e .[dev]
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]' build twine
+
+      - name: Clean check
+        run: bash scripts/clean.sh --check
 
       - name: Lint with ruff
         run: ruff check src/ tests/
 
       - name: Type check with mypy
-        run: mypy src/markitdown_paperlm
+        run: mypy src/markitdown_paperlm src/paperlm
 
       - name: Pytest (fast suite — no ML)
         run: |
@@ -55,6 +60,46 @@ jobs:
             --cov=markitdown_paperlm \
             --cov-report=term-missing \
             --cov-fail-under=60
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package metadata
+        run: twine check dist/*
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: paperlm-dist
+          path: dist/*
+
+  compat:
+    name: fast tests (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install package with dev extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Pytest (fast suite — no ML)
+        run: |
+          pytest \
+            --ignore=tests/test_docling_adapter.py \
+            --ignore=tests/test_ocr_adapter.py \
+            --ignore=tests/test_pdf_converter_e2e.py
 
   fresh-clone:
     name: fresh-clone pytest (py3.12, no editable install)
@@ -80,21 +125,12 @@ jobs:
             --ignore=tests/test_ocr_adapter.py \
             --ignore=tests/test_pdf_converter_e2e.py
 
-  clean-check:
-    name: tree is clean (no ._* / __pycache__ / .pyc)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Fail if regenerable junk was committed
-        run: bash scripts/clean.sh --check
-
   # Slow integration tests gated behind workflow_dispatch — they download
   # ~500 MB of ML weights and take several minutes each.
   integration:
     name: integration (Docling + PaddleOCR)
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_integration == true }}
     steps:
       - uses: actions/checkout@v4
 

@@ -1,10 +1,12 @@
 # paperlm
 
+[![CI](https://github.com/youngfly93/paperlm/actions/workflows/test.yml/badge.svg)](https://github.com/youngfly93/paperlm/actions/workflows/test.yml)
+
 > **Scientific PDFs → Markdown, built for LLMs.**
 > A MarkItDown plugin that replaces the built-in PDF converter with Docling-powered layout analysis and PaddleOCR for scanned documents.
 
-**Status**: ✅ v0.1.0 released on PyPI. `main` is preparing v0.1.1
-with operational tooling such as `paperlm-tools warmup`.
+**Status**: ✅ v0.1.1 released on PyPI with `paperlm-tools warmup`
+for deployment-time model initialization.
 
 中文版说明见 [README_zh.md](README_zh.md)。
 
