@@ -1,0 +1,1 @@
+"""IR → output-format serializers."""

@@ -1,0 +1,119 @@
+name: test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Keep __pycache__/.pyc out of the source tree even during CI builds.
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONPYCACHEPREFIX: /tmp/paperlm-pycache
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    name: fast tests (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install uv
+        run: pip install --upgrade pip uv
+
+      # Fast tests do not depend on Docling or PaddleOCR — only core deps.
+      - name: Install package with dev extras
+        run: |
+          uv pip install --system -e .[dev]
+
+      - name: Lint with ruff
+        run: ruff check src/ tests/
+
+      - name: Type check with mypy
+        run: mypy src/markitdown_paperlm
+
+      - name: Pytest (fast suite — no ML)
+        run: |
+          pytest \
+            --ignore=tests/test_docling_adapter.py \
+            --ignore=tests/test_ocr_adapter.py \
+            --ignore=tests/test_pdf_converter_e2e.py \
+            --cov=markitdown_paperlm \
+            --cov-report=term-missing \
+            --cov-fail-under=60
+
+  fresh-clone:
+    name: fresh-clone pytest (py3.12, no editable install)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install only core runtime deps (no paperlm install)
+        run: |
+          pip install --upgrade pip
+          pip install 'markitdown>=0.1.0' 'pdfminer.six>=20231228' 'pdfplumber>=0.11.0' pytest
+
+      - name: Collect + run pure-Python tests via pythonpath setting
+        # Reviewer's scenario: clone, no install, pytest. This must pass because
+        # pyproject.toml sets `pythonpath = ["src"]` under [tool.pytest.ini_options].
+        run: |
+          pytest \
+            --ignore=tests/test_docling_adapter.py \
+            --ignore=tests/test_ocr_adapter.py \
+            --ignore=tests/test_pdf_converter_e2e.py
+
+  clean-check:
+    name: tree is clean (no ._* / __pycache__ / .pyc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if regenerable junk was committed
+        run: bash scripts/clean.sh --check
+
+  # Slow integration tests gated behind workflow_dispatch — they download
+  # ~500 MB of ML weights and take several minutes each.
+  integration:
+    name: integration (Docling + PaddleOCR)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install with all ML extras
+        run: |
+          pip install --upgrade pip uv
+          uv pip install --system -e '.[docling,ocr,dev]'
+
+      - name: Build fixture corpus
+        # Fixtures are not in git (see .gitignore). fetch.py downloads the 6
+        # real papers and rasterizes the 2 synthetic "scanned" variants.
+        run: python tests/fixtures/fetch.py
+
+      - name: Run integration tests
+        env:
+          PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK: "True"
+        run: |
+          pytest tests/test_docling_adapter.py tests/test_ocr_adapter.py tests/test_pdf_converter_e2e.py

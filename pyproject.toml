@@ -1,0 +1,118 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "paperlm"
+dynamic = ["version"]
+description = "Scientific PDFs → Markdown, built for LLMs. A MarkItDown plugin that replaces the built-in PDF converter with Docling-powered layout analysis and local OCR (PaddleOCR) for scanned documents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+keywords = ["markitdown", "pdf", "markdown", "llm", "rag", "docling", "ocr", "scientific", "paper"]
+authors = [
+  { name = "yangfei", email = "yangf931008@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Text Processing :: Markup :: Markdown",
+]
+
+dependencies = [
+  "markitdown>=0.1.0",
+  "pdfminer.six>=20231228",
+  "pdfplumber>=0.11.0",
+]
+
+[project.optional-dependencies]
+docling = [
+  "docling>=2.90,<3.0",
+]
+ocr = [
+  # PaddleOCR requires the paddlepaddle framework to be installed separately.
+  # Both are Apache-2.0 → safe for commercial use.
+  "paddleocr>=3.0",
+  "paddlepaddle>=3.0",
+  "pypdfium2>=5.0",
+]
+formula = [
+  "pix2tex>=0.1.0",
+]
+marker = [
+  "marker-pdf>=1.5",
+]
+mineru = [
+  "mineru>=2.5",
+]
+all = [
+  "paperlm[docling,ocr,formula]",
+]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "pre-commit>=3.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/youngfly93/paperlm"
+Documentation = "https://github.com/youngfly93/paperlm#readme"
+Issues = "https://github.com/youngfly93/paperlm/issues"
+Source = "https://github.com/youngfly93/paperlm"
+
+[project.scripts]
+paperlm-batch = "markitdown_paperlm.cli.batch:main"
+
+[project.entry-points."markitdown.plugin"]
+paperlm = "markitdown_paperlm"
+
+[tool.hatch.version]
+path = "src/markitdown_paperlm/__about__.py"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/markitdown_paperlm", "src/paperlm"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/markitdown_paperlm", "src/paperlm"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# macOS-on-exFAT leaves AppleDouble metadata files around; they are not Python.
+extend-exclude = [
+    "._*",
+    ".___*",
+    ".pytest_cache",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+# Let pytest find the package without requiring an editable install,
+# so pure-Python unit tests work on a fresh clone. Entry-point tests
+# (e.g. MarkItDown(enable_plugins=True)) still need an install.
+pythonpath = ["src"]
+
+[tool.coverage.run]
+source_pkgs = ["markitdown_paperlm"]
+branch = true
