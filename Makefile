@@ -1,5 +1,5 @@
 .PHONY: help clean clean-check test test-fast test-all fresh-clone-test \
-        benchmark-compare benchmark-compare-full benchmark-quality benchmark-ocr-confidence \
+        benchmark-report benchmark-compare benchmark-compare-full benchmark-quality benchmark-ocr-confidence \
         benchmark-long-perf benchmark-long-profile benchmark-worker-pool \
         build check-twine-creds check-confirm-publish publish-test publish release-check
 
@@ -16,6 +16,7 @@ help:
 	@echo "  make test-fast        # run unit tests that don't load ML models"
 	@echo "  make test-all         # run everything (slow; Docling + PaddleOCR)"
 	@echo "  make fresh-clone-test # reproduce fresh-clone install scenario"
+	@echo "  make benchmark-report # generate release-facing benchmark report"
 	@echo "  make benchmark-compare # generate smoke competitor report (safe default)"
 	@echo "  make benchmark-compare-full # opt-in full/heavy competitor report"
 	@echo "  make benchmark-quality # generate snippet recall + reading-order report"
@@ -58,6 +59,14 @@ fresh-clone-test: clean
 		    --ignore=tests/test_ocr_adapter.py \
 		    --ignore=tests/test_pdf_converter_e2e.py; \
 		  rm -rf $$TMPDIR'
+
+benchmark-report: clean
+	python benchmarks/benchmark_report.py \
+	  --profile full \
+	  --tools paperlm_plugin,markitdown_baseline,docling_standalone \
+	  --timeout-s 240 \
+	  --max-rss-mb 4096 \
+	  --max-rss-mb-hard 6144
 
 benchmark-compare: clean
 	python benchmarks/phase5_competitor_compare.py \

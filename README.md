@@ -300,10 +300,15 @@ The competitor benchmark is also guarded by default. `make
 benchmark-compare` runs only the smoke fixture profile and the core
 triad (`MarkItDown`, `paperlm`, Docling), with per-run timeouts, RSS
 warnings, and hard RSS limits that kill only the offending subprocess.
+For release-facing evidence, `make benchmark-report` writes
+`benchmarks/reports/latest.md` and `benchmarks/reports/latest.json`
+with quality, reading-order, latency, RSS, and failure summaries across
+the current 8-fixture corpus.
 Use the full/heavy matrix only when you intentionally want to load every
 installed parser:
 
 ```bash
+make benchmark-report        # release-facing report, core triad, full fixture corpus
 make benchmark-compare       # safe smoke profile
 make benchmark-compare-full  # opt-in full corpus + Marker/MinerU runners
 make benchmark-long-perf     # one long math-heavy PDF, with paperlm timing breakdown

@@ -216,6 +216,7 @@ pytest tests/test_pdf_converter_e2e.py
    python tests/fixtures/fetch.py                # 下载 corpus
    pip install -e '.[docling,ocr,dev]'
    make test-all                                 # 约 3-4 分钟
+   make benchmark-report                         # 生成 benchmarks/reports/latest.md/json
    # 或跑完整 sweep，per-fixture peak RSS：
    python benchmarks/w4d5_integration_sweep.py
    ```
