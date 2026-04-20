@@ -152,15 +152,7 @@ class DoclingAdapter:
                 ir.blocks.append(block)
                 order += 1
 
-        # Formula-enrichment pipeline should populate text; if it's disabled
-        # we saw formulas without LaTeX — warn the caller so they know why.
-        empty_formulas = [b for b in ir.blocks if b.type == BlockType.FORMULA and not b.content]
-        if empty_formulas and not self.enable_formula:
-            ir.warnings.append(
-                f"{len(empty_formulas)} formula region(s) detected but LaTeX "
-                "not extracted. Pass paperlm_enable_formula=True to MarkItDown "
-                "for LaTeX recognition."
-            )
+        _record_formula_metadata(ir, enable_formula=self.enable_formula)
 
         # Post-processing pipeline, ordered from layout-preserving to
         # semantic: reading-order → table merge → caption link.
@@ -169,6 +161,9 @@ class DoclingAdapter:
             reorder_captions_after_targets,
         )
         from markitdown_paperlm.serializers.front_matter import normalize_front_matter
+        from markitdown_paperlm.serializers.heading_hierarchy import (
+            normalize_and_repair_headings,
+        )
         from markitdown_paperlm.serializers.reading_order import (
             repair_two_column_order,
         )
@@ -182,10 +177,14 @@ class DoclingAdapter:
         #    or preprint furniture before the title on page 1.
         ir.blocks = normalize_front_matter(ir.blocks)
 
-        # 3. Stitch tables split across page boundaries back together.
+        # 3. Normalize journal furniture and move late main section headings
+        #    before their first subsection when Docling emits them out of order.
+        ir.blocks = normalize_and_repair_headings(ir.blocks)
+
+        # 4. Stitch tables split across page boundaries back together.
         ir.blocks = merge_cross_page_tables(ir.blocks)
 
-        # 4. Pair figures/tables with captions and move captions adjacent
+        # 5. Pair figures/tables with captions and move captions adjacent
         #    to their target blocks.
         link_captions(ir.blocks)
         ir.blocks = reorder_captions_after_targets(ir.blocks)
@@ -261,6 +260,25 @@ def _page_paragraph_medians(doc) -> dict[int, float]:
         for page, heights in heights_by_page.items()
         if heights
     }
+
+
+def _record_formula_metadata(ir: IR, *, enable_formula: bool) -> None:
+    """Record formula extraction quality in IR metadata and warnings."""
+    formula_blocks = [b for b in ir.blocks if b.type == BlockType.FORMULA]
+    placeholders = sum(1 for b in formula_blocks if not b.content.strip())
+    ir.metadata["formula"] = {
+        "enabled": bool(enable_formula),
+        "detected": len(formula_blocks),
+        "extracted": len(formula_blocks) - placeholders,
+        "placeholders": placeholders,
+    }
+
+    if placeholders and not enable_formula:
+        ir.warnings.append(
+            f"{placeholders} formula region(s) detected but LaTeX "
+            "not extracted. Pass paperlm_enable_formula=True to MarkItDown "
+            "for LaTeX recognition."
+        )
 
 
 def _is_inline_formula(bbox: BBox | None, page_medians: dict[int, float]) -> bool:

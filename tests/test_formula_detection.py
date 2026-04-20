@@ -5,6 +5,7 @@ from __future__ import annotations
 from markitdown_paperlm.engines.docling_adapter import (
     _INLINE_BLOCK_RATIO,
     _is_inline_formula,
+    _record_formula_metadata,
 )
 from markitdown_paperlm.ir import IR, BBox, Block, BlockType
 from markitdown_paperlm.serializers.markdown import MarkdownSerializer
@@ -104,3 +105,32 @@ def test_formula_block_with_empty_content_still_appears_in_ir() -> None:
     assert "[formula]" in out
     assert "outro" in out
     assert out.index("intro") < out.index("[formula]") < out.index("outro")
+
+
+def test_formula_metadata_counts_placeholders_and_extracted() -> None:
+    ir = IR(
+        blocks=[
+            Block(type=BlockType.FORMULA, content="", attrs={"inline": False}),
+            Block(type=BlockType.FORMULA, content=r"E = mc^2", attrs={"inline": True}),
+        ]
+    )
+
+    _record_formula_metadata(ir, enable_formula=False)
+
+    assert ir.metadata["formula"] == {
+        "enabled": False,
+        "detected": 2,
+        "extracted": 1,
+        "placeholders": 1,
+    }
+    assert "formula region" in ir.warnings[0]
+
+
+def test_formula_metadata_does_not_warn_when_formula_enabled() -> None:
+    ir = IR(blocks=[Block(type=BlockType.FORMULA, content="", attrs={"inline": False})])
+
+    _record_formula_metadata(ir, enable_formula=True)
+
+    assert ir.metadata["formula"]["enabled"] is True
+    assert ir.metadata["formula"]["placeholders"] == 1
+    assert ir.warnings == []

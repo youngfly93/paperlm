@@ -223,6 +223,7 @@ def _result_row(
         index=index,
         write_sidecars=write_sidecars,
     )
+    formula_stats = _formula_stats(result.paperlm_dict)
     row: dict[str, Any] = {
         "id": item.item_id,
         "pdf_path": result.pdf_path,
@@ -233,6 +234,9 @@ def _result_row(
         "peak_rss_mb": result.peak_rss_mb,
         "chars": len(result.markdown),
         "block_count": _block_count(result.paperlm_dict),
+        "formula_detected": formula_stats["detected"],
+        "formula_extracted": formula_stats["extracted"],
+        "formula_placeholders": formula_stats["placeholders"],
         "warnings": result.warnings,
         "error": result.error,
         **artifact_paths,
@@ -292,6 +296,30 @@ def _block_count(paperlm_dict: dict[str, Any] | None) -> int:
         return block_count
     blocks = paperlm_dict.get("blocks")
     return len(blocks) if isinstance(blocks, list) else 0
+
+
+def _formula_stats(paperlm_dict: dict[str, Any] | None) -> dict[str, int]:
+    fallback = {"detected": 0, "extracted": 0, "placeholders": 0}
+    if not paperlm_dict:
+        return fallback
+    metadata = paperlm_dict.get("metadata")
+    if not isinstance(metadata, dict):
+        return fallback
+    formula = metadata.get("formula")
+    if not isinstance(formula, dict):
+        return fallback
+    return {
+        "detected": _int_value(formula.get("detected")),
+        "extracted": _int_value(formula.get("extracted")),
+        "placeholders": _int_value(formula.get("placeholders")),
+    }
+
+
+def _int_value(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _float_value(value: Any) -> float:

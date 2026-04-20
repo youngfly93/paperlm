@@ -32,7 +32,17 @@ FAKE_WORKER = textwrap.dedent(
                     "markdown": markdown,
                     "engine_used": "fake",
                     "warnings": [],
-                    "paperlm_dict": {"block_count": 1, "blocks": [{"content": markdown}]},
+                    "paperlm_dict": {
+                        "block_count": 1,
+                        "metadata": {
+                            "formula": {
+                                "detected": 2,
+                                "extracted": 1,
+                                "placeholders": 1,
+                            }
+                        },
+                        "blocks": [{"content": markdown}],
+                    },
                     "paperlm_chunks_jsonl": "{\"text\":\"ok\"}\n",
                     "error": "",
                 }
@@ -70,6 +80,9 @@ def test_batch_cli_writes_jsonl_and_artifacts(tmp_path, capsys) -> None:
     assert row["status"] == "ok"
     assert row["engine_used"] == "fake"
     assert row["block_count"] == 1
+    assert row["formula_detected"] == 2
+    assert row["formula_extracted"] == 1
+    assert row["formula_placeholders"] == 1
     assert row["markdown"] == "# paper one.pdf"
     assert Path(row["markdown_path"]).read_text(encoding="utf-8") == "# paper one.pdf"
     assert Path(row["paperlm_json_path"]).exists()
