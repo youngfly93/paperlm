@@ -76,6 +76,25 @@ def test_ir_to_chunks_jsonl_skips_empty_visual_blocks() -> None:
 
     assert [row["text"] for row in rows] == ["Paper Title", "Introduction"]
     assert rows[1]["level"] == 2
+    assert rows[0]["bbox"]["x0"] == 10
+
+
+def test_sidecars_clean_text_for_ingestion() -> None:
+    ir = IR(
+        blocks=[
+            Block(
+                type=BlockType.PARAGRAPH,
+                content="speci fi cally\x00",
+                bbox=BBox(page=1, x0=0, y0=0, x1=10, y1=10),
+            )
+        ]
+    )
+
+    data = ir_to_dict(ir)
+    row = json.loads(ir_to_chunks_jsonl(ir))
+
+    assert data["blocks"][0]["content"] == "specifically"
+    assert row["text"] == "specifically"
 
 
 def test_pdf_converter_attaches_json_sidecars() -> None:

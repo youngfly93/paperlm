@@ -1,6 +1,6 @@
 """Unit tests for MarkdownSerializer."""
 
-from markitdown_paperlm.ir import IR, Block, BlockType
+from markitdown_paperlm.ir import IR, BBox, Block, BlockType
 from markitdown_paperlm.serializers.markdown import MarkdownSerializer
 
 
@@ -67,3 +67,47 @@ def test_table_content_passthrough() -> None:
     table_md = "| a | b |\n| - | - |\n| 1 | 2 |"
     md = _render([Block(type=BlockType.TABLE, content=table_md)])
     assert table_md in md
+
+
+def test_text_cleanup_removes_nulls_ligature_splits_and_dehyphenates() -> None:
+    md = _render([
+        Block(
+            type=BlockType.PARAGRAPH,
+            content="speci fi cally gap- fi lling bu-\nffering\x00",
+        )
+    ])
+
+    assert "\x00" not in md
+    assert "specifically" in md
+    assert "gap-filling" in md
+    assert "buffering" in md
+
+
+def test_short_non_numeric_heading_is_demoted_to_paragraph() -> None:
+    md = _render([
+        Block(type=BlockType.HEADING, content="a", attrs={"level": 2}, reading_order=0),
+        Block(type=BlockType.HEADING, content="1", attrs={"level": 2}, reading_order=1),
+    ])
+
+    assert md.startswith("a\n\n## 1")
+
+
+def test_figure_caption_renders_as_alt_text_without_duplicate_caption() -> None:
+    fig = Block(
+        type=BlockType.FIGURE,
+        content="",
+        bbox=BBox(page=1, x0=0, y0=0, x1=100, y1=100),
+        reading_order=0,
+        attrs={"caption_reading_order": 1},
+    )
+    cap = Block(
+        type=BlockType.CAPTION,
+        content="Figure 1. Workflow",
+        bbox=BBox(page=1, x0=0, y0=100, x1=100, y1=120),
+        reading_order=1,
+        attrs={"target_order": 0, "target_type": "figure"},
+    )
+
+    md = _render([fig, cap])
+
+    assert md == "![Figure 1. Workflow](figure)\n"

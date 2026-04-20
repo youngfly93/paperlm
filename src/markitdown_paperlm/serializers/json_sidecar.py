@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from markitdown_paperlm.ir import IR, BBox, Block
+from markitdown_paperlm.ir import IR, BBox, Block, BlockType
+from markitdown_paperlm.serializers.text_normalize import clean_markdown_text
 
 IR_SCHEMA_VERSION = 1
 
@@ -35,13 +36,14 @@ def ir_to_chunks_jsonl(ir: IR) -> str:
     """
     lines: list[str] = []
     for index, block in enumerate(ir.blocks):
-        text = block.content.strip()
+        text = _clean_block_content(block).strip()
         if not text:
             continue
         row = {
             "block_index": index,
             "type": block.type.value,
             "page": block.bbox.page if block.bbox else None,
+            "bbox": _bbox_to_dict(block.bbox),
             "text": text,
         }
         if block.type == "heading":
@@ -54,7 +56,7 @@ def _block_to_dict(index: int, block: Block) -> dict[str, Any]:
     return {
         "index": index,
         "type": block.type.value,
-        "content": block.content,
+        "content": _clean_block_content(block),
         "bbox": _bbox_to_dict(block.bbox),
         "reading_order": block.reading_order,
         "attrs": _json_safe(block.attrs),
@@ -71,6 +73,13 @@ def _bbox_to_dict(bbox: BBox | None) -> dict[str, float | int] | None:
         "x1": bbox.x1,
         "y1": bbox.y1,
     }
+
+
+def _clean_block_content(block: Block) -> str:
+    return clean_markdown_text(
+        block.content,
+        normalize_words=block.type not in (BlockType.CODE, BlockType.FORMULA),
+    )
 
 
 def _json_safe(value: Any) -> Any:

@@ -133,3 +133,29 @@ def test_batch_cli_allow_failures_returns_zero(tmp_path, capsys) -> None:
 
     assert exit_code == 0
     assert json.loads(capsys.readouterr().out)["status"] == "error"
+
+
+def test_batch_cli_summary_writes_aggregate_to_stderr(tmp_path, capsys) -> None:
+    pdf = tmp_path / "paper.pdf"
+    pdf.write_bytes(b"%PDF-1.4\n")
+
+    exit_code = batch.main(
+        [
+            str(pdf),
+            "--worker-command",
+            _fake_worker_arg(),
+            "--summary",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    row = json.loads(captured.out)
+    summary = json.loads(captured.err)
+
+    assert exit_code == 0
+    assert row["status"] == "ok"
+    assert summary["total"] == 1
+    assert summary["ok"] == 1
+    assert summary["failed"] == 0
+    assert summary["elapsed_sum_s"] == 0.01
+    assert "wall_elapsed_s" in summary

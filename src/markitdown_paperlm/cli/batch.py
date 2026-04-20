@@ -6,6 +6,7 @@ import argparse
 import json
 import shlex
 import sys
+import time
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,11 +31,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     output_stream = _open_output_jsonl(args.output_jsonl)
     close_output = output_stream is not sys.stdout
+    started = time.perf_counter()
     try:
         counts = run_batch(items, args=args, output_stream=output_stream)
     finally:
         if close_output:
             output_stream.close()
+
+    if args.summary:
+        counts["wall_elapsed_s"] = round(time.perf_counter() - started, 3)
+        sys.stderr.write(json.dumps(counts, ensure_ascii=False) + "\n")
 
     if counts["failed"] and not args.allow_failures:
         return 1
@@ -97,6 +103,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Return exit code 0 even if some rows fail. Failure details are still emitted in JSONL.",
     )
     parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Emit one aggregate JSON summary to stderr after processing.",
+    )
+    parser.add_argument(
         "--worker-command",
         help=argparse.SUPPRESS,
     )
@@ -108,7 +119,7 @@ def run_batch(
     *,
     args: argparse.Namespace,
     output_stream: TextIO,
-) -> dict[str, int]:
+) -> dict[str, Any]:
     if args.workers <= 0:
         raise ValueError("--workers must be > 0")
     if args.timeout_s <= 0:
@@ -121,7 +132,13 @@ def run_batch(
         output_dir.mkdir(parents=True, exist_ok=True)
 
     batch_size = args.batch_size if args.batch_size > 0 else args.workers
-    counts = {"total": 0, "ok": 0, "failed": 0}
+    counts: dict[str, Any] = {
+        "total": 0,
+        "ok": 0,
+        "failed": 0,
+        "elapsed_sum_s": 0.0,
+        "max_peak_rss_mb": None,
+    }
     worker_command = shlex.split(args.worker_command) if args.worker_command else None
 
     pool = DoclingWorkerPool(
@@ -155,6 +172,14 @@ def run_batch(
                     counts["ok"] += 1
                 else:
                     counts["failed"] += 1
+                counts["elapsed_sum_s"] = round(
+                    float(counts["elapsed_sum_s"]) + _float_value(row.get("elapsed_s")),
+                    3,
+                )
+                peak_rss = _optional_float(row.get("peak_rss_mb"))
+                if peak_rss is not None:
+                    current = _optional_float(counts.get("max_peak_rss_mb"))
+                    counts["max_peak_rss_mb"] = peak_rss if current is None else max(current, peak_rss)
             item_offset += len(batch)
     finally:
         pool.close()
@@ -267,6 +292,18 @@ def _block_count(paperlm_dict: dict[str, Any] | None) -> int:
         return block_count
     blocks = paperlm_dict.get("blocks")
     return len(blocks) if isinstance(blocks, list) else 0
+
+
+def _float_value(value: Any) -> float:
+    parsed = _optional_float(value)
+    return parsed if parsed is not None else 0.0
+
+
+def _optional_float(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _load_items(args: argparse.Namespace) -> list[BatchItem]:
