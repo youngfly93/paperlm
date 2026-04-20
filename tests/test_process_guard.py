@@ -20,6 +20,19 @@ def test_guarded_subprocess_captures_completed_stdout() -> None:
     assert result.stdout.strip() == "ok"
 
 
+def test_guarded_subprocess_drains_large_stdout() -> None:
+    result = process_guard.run_guarded_subprocess(
+        [sys.executable, "-c", "import sys; sys.stdout.write('x' * 200_000)"],
+        timeout_s=5,
+        max_rss_mb_hard=1024,
+        poll_interval_s=0.01,
+    )
+
+    assert result.status == "completed"
+    assert result.returncode == 0
+    assert len(result.stdout) == 200_000
+
+
 def test_guarded_subprocess_times_out() -> None:
     result = process_guard.run_guarded_subprocess(
         [sys.executable, "-c", "import time; time.sleep(5)"],

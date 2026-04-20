@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -51,6 +52,8 @@ def run_guarded_subprocess(
         popen_kwargs["start_new_session"] = True
 
     proc = subprocess.Popen(cmd, **popen_kwargs)
+    stdout_chunks, stdout_thread = _drain_stream(proc.stdout)
+    stderr_chunks, stderr_thread = _drain_stream(proc.stderr)
     try:
         while True:
             elapsed_s = time.perf_counter() - started
@@ -60,7 +63,13 @@ def run_guarded_subprocess(
 
             if max_rss_mb_hard > 0 and current_rss_mb is not None and current_rss_mb > max_rss_mb_hard:
                 _kill_process_tree(proc)
-                stdout, stderr = proc.communicate()
+                stdout, stderr = _collect_output(
+                    proc,
+                    stdout_chunks,
+                    stderr_chunks,
+                    stdout_thread,
+                    stderr_thread,
+                )
                 return GuardedProcessResult(
                     status="memory_limit",
                     returncode=proc.returncode,
@@ -76,7 +85,13 @@ def run_guarded_subprocess(
 
             returncode = proc.poll()
             if returncode is not None:
-                stdout, stderr = proc.communicate()
+                stdout, stderr = _collect_output(
+                    proc,
+                    stdout_chunks,
+                    stderr_chunks,
+                    stdout_thread,
+                    stderr_thread,
+                )
                 return GuardedProcessResult(
                     status="completed",
                     returncode=returncode,
@@ -89,7 +104,13 @@ def run_guarded_subprocess(
 
             if elapsed_s >= timeout_s:
                 _kill_process_tree(proc)
-                stdout, stderr = proc.communicate()
+                stdout, stderr = _collect_output(
+                    proc,
+                    stdout_chunks,
+                    stderr_chunks,
+                    stdout_thread,
+                    stderr_thread,
+                )
                 return GuardedProcessResult(
                     status="timeout",
                     returncode=proc.returncode,
@@ -104,6 +125,50 @@ def run_guarded_subprocess(
     except Exception:
         _kill_process_tree(proc)
         raise
+
+
+def _drain_stream(stream: Any | None) -> tuple[list[str], threading.Thread | None]:
+    """Continuously read a child pipe so large worker output cannot deadlock.
+
+    Heavy benchmark workers can return full Markdown payloads. If the parent
+    waits until process exit before reading stdout/stderr, the child can block
+    after filling the OS pipe buffer and never reach exit.
+    """
+    if stream is None:
+        return [], None
+
+    chunks: list[str] = []
+
+    def _reader() -> None:
+        while True:
+            chunk = stream.read(8192)
+            if not chunk:
+                break
+            chunks.append(chunk)
+
+    thread = threading.Thread(target=_reader, daemon=True)
+    thread.start()
+    return chunks, thread
+
+
+def _collect_output(
+    proc: subprocess.Popen[str],
+    stdout_chunks: list[str],
+    stderr_chunks: list[str],
+    stdout_thread: threading.Thread | None,
+    stderr_thread: threading.Thread | None,
+) -> tuple[str, str]:
+    try:
+        proc.wait(timeout=1)
+    except subprocess.TimeoutExpired:
+        _kill_process_tree(proc)
+        proc.wait(timeout=1)
+
+    for thread in (stdout_thread, stderr_thread):
+        if thread is not None:
+            thread.join(timeout=1)
+
+    return "".join(stdout_chunks), "".join(stderr_chunks)
 
 
 def _kill_process_tree(proc: subprocess.Popen[str]) -> None:

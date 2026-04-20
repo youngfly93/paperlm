@@ -1,0 +1,740 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-20T00:52:32.222834+00:00",
+  "profile": "quality",
+  "tools": [
+    "paperlm_plugin",
+    "markitdown_baseline",
+    "docling_standalone"
+  ],
+  "fixtures": [
+    {
+      "filename": "sample_en_two_col.pdf",
+      "pages": 27,
+      "description": "EN double-column bioRxiv bioinformatics benchmark paper"
+    },
+    {
+      "filename": "sample_arxiv_table_heavy.pdf",
+      "pages": 12,
+      "description": "EN benchmark paper dense with tables (~5 tables in first 5 pages)"
+    },
+    {
+      "filename": "sample_zh_mixed.pdf",
+      "pages": 10,
+      "description": "ZH double-column 《生命科学》2024 bioinformatics review"
+    },
+    {
+      "filename": "sample_scanned_1p.pdf",
+      "pages": 1,
+      "description": "synthetic scanned (1p @ 150dpi)"
+    }
+  ],
+  "run_controls": {
+    "timeout_s": 300.0,
+    "max_rss_mb": 4096.0,
+    "max_rss_mb_hard": 6144.0
+  },
+  "summary": {
+    "tools": {
+      "paperlm_plugin": {
+        "label": "paperlm",
+        "available": true,
+        "successful_runs": 4,
+        "total_runs": 4,
+        "median_elapsed_s": 9.3,
+        "median_peak_rss_mb": 1376.6,
+        "median_chars": 37269.5,
+        "snippet_exact_hits": 10,
+        "snippet_total": 11,
+        "snippet_avg_score": 0.875,
+        "order_pass": 2,
+        "order_total": 4
+      },
+      "markitdown_baseline": {
+        "label": "MarkItDown baseline",
+        "available": true,
+        "successful_runs": 3,
+        "total_runs": 4,
+        "median_elapsed_s": 0.82,
+        "median_peak_rss_mb": 228.1,
+        "median_chars": 109044.0,
+        "snippet_exact_hits": 6,
+        "snippet_total": 9,
+        "snippet_avg_score": 0.968,
+        "order_pass": 0,
+        "order_total": 3
+      },
+      "docling_standalone": {
+        "label": "Docling standalone",
+        "available": true,
+        "successful_runs": 4,
+        "total_runs": 4,
+        "median_elapsed_s": 8.965,
+        "median_peak_rss_mb": 1330.0,
+        "median_chars": 36989.5,
+        "snippet_exact_hits": 10,
+        "snippet_total": 11,
+        "snippet_avg_score": 0.875,
+        "order_pass": 1,
+        "order_total": 4
+      }
+    },
+    "executive_summary": [
+      "paperlm succeeded on 4/4 runs vs MarkItDown baseline 3/4.",
+      "On curated snippets, paperlm hit 10/11 exactly vs baseline 6/9.",
+      "Against Docling, paperlm order checks were 2/4 vs 1/4.",
+      "Median latency was paperlm 9.30s vs Docling 8.96s."
+    ]
+  },
+  "guardrails": [
+    {
+      "tool_key": "markitdown_baseline",
+      "fixture": "sample_scanned_1p.pdf",
+      "kind": "empty",
+      "detail": "empty markdown"
+    }
+  ],
+  "results": [
+    {
+      "tool_key": "paperlm_plugin",
+      "fixture": "sample_en_two_col.pdf",
+      "status": "ok",
+      "elapsed_s": 19.1,
+      "peak_rss_mb": 2405.2,
+      "chars": 125624,
+      "lines": 926,
+      "headings": 53,
+      "tables": 50,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "# A systematic benchmark of bioinformatics methods for single-cell and spatial RNA-seq Nanopore long-read data",
+      "first_line_title_like": true,
+      "engine_used": "docling",
+      "warnings": [
+        "scanned_check: avg 4466.3 chars/page across 3 sampled (threshold 20)",
+        "2 formula region(s) detected but LaTeX not extracted. Pass paperlm_enable_formula=True to MarkItDown for LaTeX recognition."
+      ],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract",
+          "exact": true,
+          "score": 1.0,
+          "position": 1059
+        },
+        {
+          "role": "introduction",
+          "exact": true,
+          "score": 1.0,
+          "position": 526
+        }
+      ],
+      "order": {
+        "roles": [
+          "title",
+          "abstract",
+          "introduction"
+        ],
+        "status": "fail",
+        "missing": [],
+        "positions": {
+          "title": 0,
+          "abstract": 1059,
+          "introduction": 526
+        }
+      }
+    },
+    {
+      "tool_key": "paperlm_plugin",
+      "fixture": "sample_arxiv_table_heavy.pdf",
+      "status": "ok",
+      "elapsed_s": 11.25,
+      "peak_rss_mb": 1468.1,
+      "chars": 54069,
+      "lines": 424,
+      "headings": 26,
+      "tables": 50,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "# TARGET: Benchmarking Table Retrieval for Generative Tasks",
+      "first_line_title_like": true,
+      "engine_used": "docling",
+      "warnings": [
+        "scanned_check: avg 3380.7 chars/page across 3 sampled (threshold 20)"
+      ],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract",
+          "exact": true,
+          "score": 1.0,
+          "position": 50
+        },
+        {
+          "role": "introduction",
+          "exact": true,
+          "score": 1.0,
+          "position": 425
+        }
+      ],
+      "order": {
+        "roles": [
+          "title",
+          "abstract",
+          "introduction"
+        ],
+        "status": "pass",
+        "missing": [],
+        "positions": {
+          "title": 0,
+          "abstract": 50,
+          "introduction": 425
+        }
+      }
+    },
+    {
+      "tool_key": "paperlm_plugin",
+      "fixture": "sample_zh_mixed.pdf",
+      "status": "ok",
+      "elapsed_s": 7.35,
+      "peak_rss_mb": 1285.1,
+      "chars": 20470,
+      "lines": 365,
+      "headings": 38,
+      "tables": 0,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "# Bioinformatics and biomanufacturing: the importance of big biodata and its data mining in b iomanufacturing",
+      "first_line_title_like": true,
+      "engine_used": "docling",
+      "warnings": [
+        "scanned_check: avg 2667.3 chars/page across 3 sampled (threshold 20)"
+      ],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title_en",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract_zh",
+          "exact": true,
+          "score": 1.0,
+          "position": 1343
+        },
+        {
+          "role": "section_1",
+          "exact": true,
+          "score": 1.0,
+          "position": 4104
+        }
+      ],
+      "order": {
+        "roles": [
+          "title_en",
+          "abstract_zh",
+          "section_1"
+        ],
+        "status": "pass",
+        "missing": [],
+        "positions": {
+          "title_en": 0,
+          "abstract_zh": 1343,
+          "section_1": 4104
+        }
+      }
+    },
+    {
+      "tool_key": "paperlm_plugin",
+      "fixture": "sample_scanned_1p.pdf",
+      "status": "ok",
+      "elapsed_s": 5.45,
+      "peak_rss_mb": 1098.7,
+      "chars": 2081,
+      "lines": 23,
+      "headings": 1,
+      "tables": 0,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "# Bioinformatics and biomanufacturing: the importance of big biodata and its data mining in biomanufacturing",
+      "first_line_title_like": true,
+      "engine_used": "docling",
+      "warnings": [
+        "scanned_check: avg 0.0 chars/page across 1 sampled (threshold 20)"
+      ],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 2,
+      "snippet_exact_hits": 1,
+      "snippet_avg_score": 0.5,
+      "snippet_results": [
+        {
+          "role": "title_en",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract_zh",
+          "exact": false,
+          "score": 0.0,
+          "position": null
+        }
+      ],
+      "order": {
+        "roles": [
+          "title_en",
+          "abstract_zh"
+        ],
+        "status": "missing",
+        "missing": [
+          "abstract_zh"
+        ],
+        "positions": {}
+      }
+    },
+    {
+      "tool_key": "markitdown_baseline",
+      "fixture": "sample_en_two_col.pdf",
+      "status": "ok",
+      "elapsed_s": 10.82,
+      "peak_rss_mb": 974.4,
+      "chars": 223864,
+      "lines": 2146,
+      "headings": 0,
+      "tables": 830,
+      "formula_markers": 0,
+      "cid_tokens": 1,
+      "first_line": "bioRxiv preprint doi: https://doi.org/10.1101/2025.07.21.665920; this version posted July 25, 2025. The copyright holder for this preprint (which",
+      "first_line_title_like": false,
+      "engine_used": "markitdown",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 1,
+      "snippet_avg_score": 0.905,
+      "snippet_results": [
+        {
+          "role": "title",
+          "exact": true,
+          "score": 1.0,
+          "position": 267
+        },
+        {
+          "role": "abstract",
+          "exact": false,
+          "score": 1.0,
+          "position": null
+        },
+        {
+          "role": "introduction",
+          "exact": false,
+          "score": 0.714,
+          "position": null
+        }
+      ],
+      "order": {
+        "roles": [
+          "title",
+          "abstract",
+          "introduction"
+        ],
+        "status": "missing",
+        "missing": [
+          "abstract",
+          "introduction"
+        ],
+        "positions": {}
+      }
+    },
+    {
+      "tool_key": "markitdown_baseline",
+      "fixture": "sample_arxiv_table_heavy.pdf",
+      "status": "ok",
+      "elapsed_s": 0.82,
+      "peak_rss_mb": 228.1,
+      "chars": 109044,
+      "lines": 1151,
+      "headings": 1,
+      "tables": 564,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "|     | TARGET: |     | Benchmarking |     |     | Table | Retrieval | for Generative |     | Tasks |     |",
+      "first_line_title_like": false,
+      "engine_used": "markitdown",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 2,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract",
+          "exact": false,
+          "score": 1.0,
+          "position": null
+        },
+        {
+          "role": "introduction",
+          "exact": true,
+          "score": 1.0,
+          "position": 244
+        }
+      ],
+      "order": {
+        "roles": [
+          "title",
+          "abstract",
+          "introduction"
+        ],
+        "status": "missing",
+        "missing": [
+          "abstract"
+        ],
+        "positions": {}
+      }
+    },
+    {
+      "tool_key": "markitdown_baseline",
+      "fixture": "sample_zh_mixed.pdf",
+      "status": "ok",
+      "elapsed_s": 0.67,
+      "peak_rss_mb": 190.0,
+      "chars": 21092,
+      "lines": 1291,
+      "headings": 0,
+      "tables": 0,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "DOI: 10.13376/j.cbls/20240163",
+      "first_line_title_like": false,
+      "engine_used": "markitdown",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title_en",
+          "exact": true,
+          "score": 1.0,
+          "position": 499
+        },
+        {
+          "role": "abstract_zh",
+          "exact": true,
+          "score": 1.0,
+          "position": 111
+        },
+        {
+          "role": "section_1",
+          "exact": true,
+          "score": 1.0,
+          "position": 4280
+        }
+      ],
+      "order": {
+        "roles": [
+          "title_en",
+          "abstract_zh",
+          "section_1"
+        ],
+        "status": "fail",
+        "missing": [],
+        "positions": {
+          "title_en": 499,
+          "abstract_zh": 111,
+          "section_1": 4280
+        }
+      }
+    },
+    {
+      "tool_key": "markitdown_baseline",
+      "fixture": "sample_scanned_1p.pdf",
+      "status": "empty",
+      "elapsed_s": 0.23,
+      "peak_rss_mb": 136.9,
+      "chars": 0,
+      "lines": 0,
+      "headings": 0,
+      "tables": 0,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "",
+      "first_line_title_like": false,
+      "engine_used": "markitdown",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "markdown": "",
+      "error": "empty markdown",
+      "snippet_total": 0,
+      "snippet_exact_hits": 0,
+      "snippet_avg_score": null,
+      "snippet_results": [],
+      "order": null
+    },
+    {
+      "tool_key": "docling_standalone",
+      "fixture": "sample_en_two_col.pdf",
+      "status": "ok",
+      "elapsed_s": 17.06,
+      "peak_rss_mb": 2355.0,
+      "chars": 122153,
+      "lines": 850,
+      "headings": 53,
+      "tables": 50,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "## A systematic benchmark of bioinformatics methods for single-cell and spatial RNA-seq Nanopore long-read data",
+      "first_line_title_like": true,
+      "engine_used": "docling",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract",
+          "exact": true,
+          "score": 1.0,
+          "position": 572
+        },
+        {
+          "role": "introduction",
+          "exact": true,
+          "score": 1.0,
+          "position": 1957
+        }
+      ],
+      "order": {
+        "roles": [
+          "title",
+          "abstract",
+          "introduction"
+        ],
+        "status": "pass",
+        "missing": [],
+        "positions": {
+          "title": 0,
+          "abstract": 572,
+          "introduction": 1957
+        }
+      }
+    },
+    {
+      "tool_key": "docling_standalone",
+      "fixture": "sample_arxiv_table_heavy.pdf",
+      "status": "ok",
+      "elapsed_s": 10.62,
+      "peak_rss_mb": 1413.5,
+      "chars": 53400,
+      "lines": 410,
+      "headings": 26,
+      "tables": 50,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "## TARGET: Benchmarking Table Retrieval for Generative Tasks",
+      "first_line_title_like": true,
+      "engine_used": "docling",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title",
+          "exact": true,
+          "score": 1.0,
+          "position": 0
+        },
+        {
+          "role": "abstract",
+          "exact": true,
+          "score": 1.0,
+          "position": 1265
+        },
+        {
+          "role": "introduction",
+          "exact": true,
+          "score": 1.0,
+          "position": 141
+        }
+      ],
+      "order": {
+        "roles": [
+          "title",
+          "abstract",
+          "introduction"
+        ],
+        "status": "fail",
+        "missing": [],
+        "positions": {
+          "title": 0,
+          "abstract": 1265,
+          "introduction": 141
+        }
+      }
+    },
+    {
+      "tool_key": "docling_standalone",
+      "fixture": "sample_zh_mixed.pdf",
+      "status": "ok",
+      "elapsed_s": 7.31,
+      "peak_rss_mb": 1246.5,
+      "chars": 20579,
+      "lines": 327,
+      "headings": 38,
+      "tables": 0,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "文章编号",
+      "first_line_title_like": false,
+      "engine_used": "docling",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 3,
+      "snippet_exact_hits": 3,
+      "snippet_avg_score": 1.0,
+      "snippet_results": [
+        {
+          "role": "title_en",
+          "exact": true,
+          "score": 1.0,
+          "position": 499
+        },
+        {
+          "role": "abstract_zh",
+          "exact": true,
+          "score": 1.0,
+          "position": 111
+        },
+        {
+          "role": "section_1",
+          "exact": true,
+          "score": 1.0,
+          "position": 4009
+        }
+      ],
+      "order": {
+        "roles": [
+          "title_en",
+          "abstract_zh",
+          "section_1"
+        ],
+        "status": "fail",
+        "missing": [],
+        "positions": {
+          "title_en": 499,
+          "abstract_zh": 111,
+          "section_1": 4009
+        }
+      }
+    },
+    {
+      "tool_key": "docling_standalone",
+      "fixture": "sample_scanned_1p.pdf",
+      "status": "ok",
+      "elapsed_s": 5.66,
+      "peak_rss_mb": 1083.9,
+      "chars": 2081,
+      "lines": 23,
+      "headings": 1,
+      "tables": 0,
+      "formula_markers": 0,
+      "cid_tokens": 0,
+      "first_line": "DOI: 10.13376/j.cbls/20240163",
+      "first_line_title_like": false,
+      "engine_used": "docling",
+      "warnings": [],
+      "ocr_mean_confidence": null,
+      "ocr_low_confidence_pages": [],
+      "error": "",
+      "snippet_total": 2,
+      "snippet_exact_hits": 1,
+      "snippet_avg_score": 0.5,
+      "snippet_results": [
+        {
+          "role": "title_en",
+          "exact": true,
+          "score": 1.0,
+          "position": 65
+        },
+        {
+          "role": "abstract_zh",
+          "exact": false,
+          "score": 0.0,
+          "position": null
+        }
+      ],
+      "order": {
+        "roles": [
+          "title_en",
+          "abstract_zh"
+        ],
+        "status": "missing",
+        "missing": [
+          "abstract_zh"
+        ],
+        "positions": {}
+      }
+    }
+  ]
+}
