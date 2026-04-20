@@ -14,8 +14,27 @@ _LIGATURE_CHARS = str.maketrans(
     }
 )
 
-_SPLIT_LIGATURE_RE = re.compile(
-    r"(?P<left>[\w-])\s+(?P<lig>ffi|ffl|ff|fi|fl)\s+(?P<right>\w)",
+_HYPHEN_SPLIT_LIGATURE_RE = re.compile(
+    r"(?P<left>\w)-\s+(?P<lig>ffi|ffl|ff|fi|fl)\s+(?P<right>\w)",
+    flags=re.IGNORECASE,
+)
+
+_PREFIX_SPLIT_LIGATURE_RE = re.compile(
+    r"\b(?P<prefix>"
+    r"speci|ful|ef|dif|suf|af|coef|arti|quanti|identi|classi|signi|"
+    r"puri|veri|modi|ampli|simpli|clari|noti|strati|con|bene|pro|"
+    r"re|prede|unde|de|detoxi|inef"
+    r")\s+(?P<lig>ffi|ffl|ff|fi|fl)\s+(?P<right>\w)",
+    flags=re.IGNORECASE,
+)
+
+_PREFIX_F_WORD_RE = re.compile(
+    r"\b(?P<prefix>con|bene|pro|re|prede|unde|de|detoxi|inef)\s+(?P<right>fi\w+)",
+    flags=re.IGNORECASE,
+)
+
+_LEADING_SPLIT_LIGATURE_RE = re.compile(
+    r"(?<!\w)(?P<lig>ffi|ffl|ff|fi|fl)\s+(?P<right>\w)",
     flags=re.IGNORECASE,
 )
 
@@ -39,8 +58,20 @@ def clean_markdown_text(text: str, *, normalize_words: bool = True) -> str:
 
     cleaned = cleaned.translate(_LIGATURE_CHARS)
     cleaned = _DEHYPHEN_RE.sub("", cleaned)
-    return _SPLIT_LIGATURE_RE.sub(
-        lambda match: f"{match.group('left')}{match.group('lig')}{match.group('right')}",
+    cleaned = _HYPHEN_SPLIT_LIGATURE_RE.sub(
+        lambda match: f"{match.group('left')}-{match.group('lig')}{match.group('right')}",
+        cleaned,
+    )
+    cleaned = _PREFIX_SPLIT_LIGATURE_RE.sub(
+        lambda match: f"{match.group('prefix')}{match.group('lig')}{match.group('right')}",
+        cleaned,
+    )
+    cleaned = _PREFIX_F_WORD_RE.sub(
+        lambda match: f"{match.group('prefix')}{match.group('right')}",
+        cleaned,
+    )
+    return _LEADING_SPLIT_LIGATURE_RE.sub(
+        lambda match: f"{match.group('lig')}{match.group('right')}",
         cleaned,
     )
 

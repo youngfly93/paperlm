@@ -73,13 +73,20 @@ def test_text_cleanup_removes_nulls_ligature_splits_and_dehyphenates() -> None:
     md = _render([
         Block(
             type=BlockType.PARAGRAPH,
-            content="speci fi cally gap- fi lling bu-\nffering\x00",
+            content=(
+                "speci fi cally gap- fi lling fi ve fi lters con firm "
+                "pro file de finition bu-\nffering\x00"
+            ),
         )
     ])
 
     assert "\x00" not in md
     assert "specifically" in md
     assert "gap-filling" in md
+    assert "five filters" in md
+    assert "confirm" in md
+    assert "profile" in md
+    assert "definition" in md
     assert "buffering" in md
 
 
