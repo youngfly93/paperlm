@@ -164,6 +164,9 @@ class DoclingAdapter:
         from markitdown_paperlm.serializers.heading_hierarchy import (
             normalize_and_repair_headings,
         )
+        from markitdown_paperlm.serializers.numbered_sections import (
+            repair_numbered_section_order,
+        )
         from markitdown_paperlm.serializers.reading_order import (
             repair_two_column_order,
         )
@@ -181,10 +184,14 @@ class DoclingAdapter:
         #    before their first subsection when Docling emits them out of order.
         ir.blocks = normalize_and_repair_headings(ir.blocks)
 
-        # 4. Stitch tables split across page boundaries back together.
+        # 4. Repair local arXiv-style numbered heading inversions such as
+        #    "3.2" before "3.1" or child sections before their parent.
+        ir.blocks = repair_numbered_section_order(ir.blocks)
+
+        # 5. Stitch tables split across page boundaries back together.
         ir.blocks = merge_cross_page_tables(ir.blocks)
 
-        # 5. Pair figures/tables with captions and move captions adjacent
+        # 6. Pair figures/tables with captions and move captions adjacent
         #    to their target blocks.
         link_captions(ir.blocks)
         ir.blocks = reorder_captions_after_targets(ir.blocks)

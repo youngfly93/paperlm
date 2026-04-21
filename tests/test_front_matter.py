@@ -99,3 +99,42 @@ def test_only_first_page_is_reordered() -> None:
         "University of Example, Department of Biology",
         "Second page starts here.",
     ]
+
+
+def test_rejects_numbered_intro_title_when_better_title_exists() -> None:
+    blocks = [
+        _block(
+            "1. Introduction and Motivating Work",
+            0,
+            type_=BlockType.TITLE,
+        ),
+        _block(
+            "Learning Transferable Visual Models From Natural Language Supervision",
+            1,
+            type_=BlockType.HEADING,
+            y0=90,
+        ),
+        _block("Abstract", 2, type_=BlockType.HEADING, y0=120),
+    ]
+
+    out = normalize_front_matter(blocks)
+
+    assert out[0].content == (
+        "Learning Transferable Visual Models From Natural Language Supervision"
+    )
+    assert out[0].type == BlockType.TITLE
+    intro = next(block for block in out if block.content.startswith("1. Introduction"))
+    assert intro.type == BlockType.HEADING
+    assert intro.attrs["demoted_front_title_candidate"] is True
+
+
+def test_rejects_bare_section_heading_as_title() -> None:
+    blocks = [
+        _block("Abstract", 0, type_=BlockType.TITLE),
+        _block("University of Example", 1, y0=90),
+    ]
+
+    out = normalize_front_matter(blocks)
+
+    assert out is blocks
+    assert out[0].type == BlockType.TITLE

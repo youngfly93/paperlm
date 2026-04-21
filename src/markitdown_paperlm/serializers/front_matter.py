@@ -42,6 +42,31 @@ _NOISE_PREFIXES = (
     "vol.",
 )
 
+_SECTION_TITLE_RE = re.compile(
+    r"^\d+(?:\.\d+)*\.?\s+"
+    r"(?:abstract|introduction|background|approach|methods?|materials and methods|"
+    r"results?|discussion|experiments?|training|conclusions?|related work|limitations)\b",
+    re.I,
+)
+
+_BARE_SECTION_TITLES = {
+    "abstract",
+    "introduction",
+    "background",
+    "approach",
+    "method",
+    "methods",
+    "materials and methods",
+    "results",
+    "discussion",
+    "experiments",
+    "training",
+    "conclusion",
+    "conclusions",
+    "related work",
+    "limitations",
+}
+
 
 def normalize_front_matter(blocks: list[Block]) -> list[Block]:
     """Promote the most plausible first-page title to the start.
@@ -83,6 +108,10 @@ def normalize_front_matter(blocks: list[Block]) -> list[Block]:
         if idx == title_idx:
             continue
         block = blocks[idx]
+        if block.type == BlockType.TITLE:
+            block.type = BlockType.HEADING
+            block.attrs.setdefault("level", 2)
+            block.attrs["demoted_front_title_candidate"] = True
         if _is_front_matter_noise(block.content):
             deprioritized.append(block)
         else:
@@ -148,6 +177,8 @@ def _title_score(block: Block) -> int:
         score += 8
     if re.search(r"\b(survey|benchmark|analysis|model|models|database|bioinformatics)\b", text, re.I):
         score += 12
+    if _looks_like_section_heading(text):
+        score -= 140
     return score
 
 
@@ -188,7 +219,15 @@ def _is_not_title(text: str) -> bool:
         return True
     if clean.startswith(("摘要", "关键词")):
         return True
+    if lower in _BARE_SECTION_TITLES:
+        return True
     return False
+
+
+def _looks_like_section_heading(text: str) -> bool:
+    clean = _clean(text)
+    lower = clean.lower()
+    return lower in _BARE_SECTION_TITLES or bool(_SECTION_TITLE_RE.match(clean))
 
 
 def _looks_like_affiliation(text: str) -> bool:
@@ -199,7 +238,8 @@ def _looks_like_affiliation(text: str) -> bool:
         return True
     if re.match(r"^[\u2660-\u2666\u2020\u2021*]", text):
         return True
-    if len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+", text)) >= 3:
+    titlecase_pairs = re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+", text)
+    if len(titlecase_pairs) >= 3 and ("," in text or re.search(r"\d", text)):
         return True
     return False
 
